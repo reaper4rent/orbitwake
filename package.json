@@ -1,0 +1,19 @@
+{
+  "name": "orbitwake",
+  "version": "1.0.0",
+  "description": "Orbitwake phone app — planetary sandbox",
+  "main": "index.html",
+  "scripts": {
+    "cap:init": "cap sync",
+    "android:sync": "cap copy android && cap sync android",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

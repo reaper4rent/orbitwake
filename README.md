@@ -1,46 +1,41 @@
 # ORBITWAKE
 
-Original planetary sandbox. Prospect three biomes, dig soil, print modules, ride a rover, and sell cosmetics.
+Phone-first planetary sandbox. Same game — now an installable app.
 
-This is **not** Astroneer and does not use System Era assets, names, or code. The screenshot you sent is that game. Orbitwake is a new IP in the same *genre*: colorful low-poly worlds, oxygen tethers, and outpost building.
+This is **not** Astroneer.
 
-## Play
+## Play on your phone (fastest)
 
-Open `index.html` in a browser (needs network once for the Three.js CDN) or deploy the folder as static hosting.
+1. Host the folder on HTTPS (Vercel import of this repo, or GitHub Pages).
+2. Open it in **Chrome on Android**.
+3. Tap **Install App**, or Chrome menu → **Add to Home screen**.
+4. It launches fullscreen like a store app. Works offline after the first load.
 
-- **WASD / left stick** move
-- **E / GATHER** pick up resin and ore
-- **DIG + Space** excavate
-- **B / BUILD** place printed modules
-- **C / SHOP** crystals and cosmetics
-- **Esc** back to the drift map
+On this phone you can also open `index.html` from a local file, but install + offline need HTTPS.
 
-Worlds
+## Controls
 
-- Ember Hollow — crimson dunes, bone trees
-- Hexcore — neon lattice and a floating core
-- Tide Crown — blue flats and coral canopies
+- Left stick — move
+- Hold **DIG** — excavate
+- Tap **GATHER** — pick up resin / ore
+- BUILD / PACK / SHOP / WARP — bottom bar
 
-## Make money (real)
+## Android APK (Capacitor)
 
-The shop is wired as a **sandbox checkout**. Tapping a cash pack grants crystals locally so you can test economy feel. It does not charge a card.
+Needs Android Studio on a computer:
 
-To take real money:
+```bash
+cd orbitwake
+npm install
+npx cap add android
+npx cap sync
+npx cap open android
+```
 
-1. Create a Stripe account and a product per pack (`Starter $0.99`, `Pioneer $4.99`, `Founder $9.99`).
-2. Add a tiny backend (Cloudflare Worker or Vercel route) that creates a Checkout Session and, on `checkout.session.completed`, credits that player.
-3. Replace the `buy()` IAP branch in `game.js` with a redirect to that session.
-4. Keep worlds, gathering, and building **free**. Charge skins, trails, and convenience only. Stores reject paywalls that lock the actual game.
+Then Build → Build Bundle(s) / APK(s) → APK.
 
-Do not ship "buy oxygen or die" as the only loop. The habitat tether already refills O2 for free.
+App id: `game.orbitwake.app`
 
-## Save
+## Shop
 
-Progress lives in `localStorage` key `orbitwake_v1`. New Drift wipes it.
-
-## Next slice
-
-- Server accounts + anti-cheat crystal balance
-- Shared outposts
-- Fourth world + caves
-- Suit workshop using your Inkbound / Tattoos And Scars look
+Sandbox checkout only. Worlds stay free.

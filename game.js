@@ -1,6 +1,12 @@
 import * as THREE from "three";
 
-const SAVE_KEY = "orbitwake_v1";
+document.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!e.target.closest(".sheet, .carousel")) e.preventDefault();
+  },
+  { passive: false }
+);
 const $ = (id) => document.getElementById(id);
 
 const WORLDS = {
@@ -96,12 +102,13 @@ const state = {
   joy: { x: 0, z: 0 },
   placing: null,
   roverOn: false,
+  digHold: false,
 };
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setPixelRatio(Math.min(devicePixelRatio, /Mobi|Android/i.test(navigator.userAgent) ? 1.35 : 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.prepend(renderer.domElement);
@@ -679,7 +686,7 @@ function tick() {
     r.position.y = sampleH(r.position.x, r.position.z) + 0.55 + Math.sin(performance.now() / 400 + r.position.x) * 0.08;
   });
 
-  if (state.keys["Space"] && state.tool === "dig") dig();
+  if ((state.keys["Space"] && state.tool === "dig") || state.digHold) dig();
 
   refreshHUD();
   camFollow(dt);
@@ -743,11 +750,16 @@ function paintCard(c, w) {
   requestAnimationFrame(resize);
 }
 
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
+window.addEventListener("resize", fitView);
+window.addEventListener("orientationchange", () => setTimeout(fitView, 200));
+function fitView() {
+  const w = window.visualViewport ? window.visualViewport.width : innerWidth;
+  const h = window.visualViewport ? window.visualViewport.height : innerHeight;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-});
+}
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitView);
 window.addEventListener("keydown", (e) => {
   state.keys[e.code] = true;
   if (e.code === "KeyE") gather();
@@ -843,14 +855,14 @@ function joyAt(ev) {
   }
   state.joy.x = x;
   state.joy.z = y;
-  knob.style.left = `${31 + x * 28}px`;
-  knob.style.top = `${31 + y * 28}px`;
+  knob.style.left = `${36 + x * 32}px`;
+  knob.style.top = `${36 + y * 32}px`;
 }
 function joyEnd() {
   state.joy.x = 0;
   state.joy.z = 0;
-  knob.style.left = "31px";
-  knob.style.top = "31px";
+  knob.style.left = "36px";
+  knob.style.top = "36px";
 }
 joy.addEventListener("pointerdown", (e) => {
   joy.setPointerCapture(e.pointerId);
@@ -861,6 +873,50 @@ joy.addEventListener("pointermove", (e) => {
 });
 joy.addEventListener("pointerup", joyEnd);
 joy.addEventListener("pointercancel", joyEnd);
+
+const actGather = $("actGather");
+const actDig = $("actDig");
+if (actGather) actGather.onclick = () => gather();
+if (actDig) {
+  const startDig = (e) => {
+    e.preventDefault();
+    state.digHold = true;
+    actDig.classList.add("on");
+  };
+  const stopDig = () => {
+    state.digHold = false;
+    actDig.classList.remove("on");
+  };
+  actDig.addEventListener("pointerdown", startDig);
+  actDig.addEventListener("pointerup", stopDig);
+  actDig.addEventListener("pointerleave", stopDig);
+  actDig.addEventListener("pointercancel", stopDig);
+}
+
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  const b = $("btnInstall");
+  if (b) b.classList.add("show");
+});
+const btnInstall = $("btnInstall");
+if (btnInstall) {
+  btnInstall.onclick = async () => {
+    if (deferredInstall) {
+      deferredInstall.prompt();
+      await deferredInstall.userChoice;
+      deferredInstall = null;
+      btnInstall.classList.remove("show");
+    } else {
+      toast("On Android Chrome: menu → Add to Home screen");
+    }
+  };
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
 
 makePlayer(save.suit);
 makeRover();

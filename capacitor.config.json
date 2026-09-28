@@ -1,0 +1,18 @@
+{
+  "appId": "game.orbitwake.app",
+  "appName": "Orbitwake",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "backgroundColor": "#040814",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#040814",
+    "captureInput": true
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#040814"
+    }
+  }
+}
