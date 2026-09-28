@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ORBITWAKE</title>
+  <style>
+    :root {
+      --ink: #071226;
+      --panel: rgba(8, 18, 40, .78);
+      --line: rgba(160, 220, 255, .28);
+      --glow: #7cf0ff;
+      --gold: #ffd36a;
+      --warn: #ff6b7a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #040814; font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: #e8f6ff; touch-action: none; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+    #ui * { pointer-events: auto; }
+    .hud-top {
+      position: absolute; top: 12px; left: 12px; right: 12px;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    }
+    .brand {
+      font-size: 13px; letter-spacing: .28em; color: var(--glow);
+      text-shadow: 0 0 12px #3cf;
+    }
+    .meters { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+    .meter { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
+    .meter label { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .12em; opacity: .85; }
+    .bar { height: 7px; background: #123; border-radius: 99px; overflow: hidden; margin-top: 3px; }
+    .bar > i { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, #3cf, #9ff); }
+    .bar.o2 > i { background: linear-gradient(90deg, #3ec7ff, #e8ffff); }
+    .bar.pwr > i { background: linear-gradient(90deg, #ffd36a, #fff1b0); }
+    .wallet {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      padding: 8px 12px; font-size: 12px; min-width: 140px;
+    }
+    .wallet b { color: var(--gold); }
+    .toast {
+      position: absolute; top: 78px; left: 50%; transform: translateX(-50%);
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 8px 14px; font-size: 13px; opacity: 0; transition: opacity .25s;
+      pointer-events: none; max-width: 80vw; text-align: center;
+    }
+    .toast.show { opacity: 1; }
+    .dock {
+      position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 96vw;
+    }
+    button.tool, button.nav {
+      background: var(--panel); color: #e8f6ff; border: 1px solid var(--line);
+      border-radius: 12px; padding: 10px 12px; font-size: 12px; letter-spacing: .06em;
+      cursor: pointer;
+    }
+    button.tool:hover, button.nav:hover, button.tool.on { border-color: var(--glow); box-shadow: 0 0 16px rgba(80,220,255,.25); }
+    #menu {
+      position: fixed; inset: 0; z-index: 8;
+      background: radial-gradient(1200px 600px at 70% 10%, rgba(80,160,255,.18), transparent 50%),
+                  linear-gradient(#06102a, #02040c);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #menu.hidden { display: none; }
+    .space-tri {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    header.hero { position: relative; z-index: 2; padding: 22px 22px 8px; }
+    header.hero h1 { font-size: 42px; letter-spacing: .22em; font-weight: 700; }
+    header.hero p { opacity: .8; margin-top: 4px; }
+    .carousel {
+      position: relative; z-index: 2; display: flex; gap: 14px; padding: 18px 22px;
+      overflow-x: auto; flex: 1; align-items: center;
+    }
+    .world-card {
+      min-width: min(78vw, 340px); height: min(42vh, 220px);
+      border-radius: 16px; border: 1px solid var(--line); overflow: hidden;
+      position: relative; cursor: pointer; flex-shrink: 0;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    .world-card canvas { width: 100%; height: 100%; }
+    .world-card .cap {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(transparent, rgba(4,10,24,.9));
+      padding: 28px 12px 10px; font-size: 13px; letter-spacing: .16em;
+    }
+    .menu-bar {
+      position: relative; z-index: 2; display: flex; gap: 8px; padding: 12px 22px 22px; flex-wrap: wrap;
+    }
+    .panel {
+      position: fixed; inset: 0; background: rgba(2,6,16,.72); z-index: 12;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .panel.open { display: flex; }
+    .sheet {
+      width: min(560px, 96vw); max-height: 86vh; overflow: auto;
+      background: #0b1730; border: 1px solid var(--line); border-radius: 18px; padding: 16px;
+    }
+    .sheet h2 { letter-spacing: .16em; font-size: 16px; margin-bottom: 10px; }
+    .inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+    .inv div, .sku {
+      background: #10203c; border: 1px solid var(--line); border-radius: 12px; padding: 10px;
+      font-size: 12px;
+    }
+    .sku { display: flex; flex-direction: column; gap: 6px; }
+    .sku button { margin-top: auto; }
+    .price { color: var(--gold); }
+    .hint { position: absolute; left: 12px; bottom: 78px; font-size: 11px; opacity: .7; max-width: 46vw; }
+    .joy {
+      position: absolute; left: 18px; bottom: 18px; width: 110px; height: 110px;
+      border-radius: 50%; border: 1px solid var(--line); background: rgba(8,18,40,.35);
+    }
+    .joy .knob {
+      position: absolute; width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(124,240,255,.35); left: 31px; top: 31px;
+    }
+    @media (min-width: 900px) { .joy { display: none; } }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <div class="space-tri" id="tris"></div>
+    <header class="hero">
+      <div class="brand">ORIGINAL SANDBOX</div>
+      <h1>ORBITWAKE</h1>
+      <p>Prospect strange worlds. Dig, tether, build, and sell the look — not the planets.</p>
+    </header>
+    <div class="carousel" id="carousel"></div>
+    <div class="menu-bar">
+      <button class="nav" id="btnContinue">CONTINUE</button>
+      <button class="nav" id="btnShopMenu">OUTPOST SHOP</button>
+      <button class="nav" id="btnNew">NEW DRIFT</button>
+    </div>
+  </div>
+
+  <div id="ui" style="display:none">
+    <div class="hud-top">
+      <div>
+        <div class="brand">ORBITWAKE</div>
+        <div class="meters">
+          <div class="meter"><label>O2 <span id="o2n">100</span></label><div class="bar o2"><i id="o2b"></i></div></div>
+          <div class="meter"><label>POWER <span id="pwrn">100</span></label><div class="bar pwr"><i id="pwrb"></i></div></div>
+        </div>
+      </div>
+      <div class="wallet">
+        <div id="worldName">EMBER HOLLOW</div>
+        <div>RESIN <b id="resin">0</b> · ORE <b id="ore">0</b></div>
+        <div>CRYSTALS <b id="crystals">0</b></div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="hint">WASD / stick move · hold DIG · B build · E gather · C shop · Esc menu</div>
+    <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+    <div class="dock">
+      <button class="tool" data-tool="gather">GATHER</button>
+      <button class="tool" data-tool="dig">DIG</button>
+      <button class="tool" data-tool="build">BUILD</button>
+      <button class="tool" id="btnInv">PACK</button>
+      <button class="tool" id="btnShop">SHOP</button>
+      <button class="tool" id="btnWarp">WARP</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panelInv">
+    <div class="sheet">
+      <h2>PACK</h2>
+      <div class="inv" id="invGrid"></div>
+      <p style="margin:12px 0 8px;opacity:.75;font-size:12px">Print from resin + ore. Habitat tethers oxygen.</p>
+      <div class="dock" style="position:static;transform:none">
+        <button class="tool" data-craft="habitat">HABITAT 12R</button>
+        <button class="tool" data-craft="solar">SOLAR 8R 4O</button>
+        <button class="tool" data-craft="storage">CACHE 6R</button>
+        <button class="tool" data-craft="beacon">BEACON 4O</button>
+        <button class="tool" data-craft="rover">ROVER 20R 10O</button>
+        <button class="nav" id="closeInv">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panelShop">
+    <div class="sheet">
+      <h2>OUTPOST SHOP</h2>
+      <p style="opacity:.75;font-size:12px;margin-bottom:10px">
+        Cosmetics and convenience. Worlds stay free. Checkout is sandboxed until you add Stripe keys.
+      </p>
+      <div class="inv" id="shopGrid"></div>
+      <div style="margin-top:12px"><button class="nav" id="closeShop">CLOSE</button></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panelBuild">
+    <div class="sheet">
+      <h2>PLACE MODULE</h2>
+      <p style="opacity:.75;font-size:12px;margin-bottom:10px">Tap a crafted module, then click the ground.</p>
+      <div class="inv" id="buildGrid"></div>
+      <div style="margin-top:12px"><button class="nav" id="closeBuild">CLOSE</button></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.1/build/three.module.js" } }
+  </script>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
